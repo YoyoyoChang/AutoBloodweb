@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
 using System.Drawing;
 
 namespace AutoBloodweb
 {
     public class BloodwebClicker
     {
-        //This is a replacement for Cursor.Position in WinForms
         [DllImport("user32.dll")]
         static extern bool SetCursorPos(int x, int y);
 
@@ -20,16 +13,19 @@ namespace AutoBloodweb
 
         private const int MOUSEEVENTF_LEFTDOWN = 0x02;
         private const int MOUSEEVENTF_LEFTUP = 0x04;
-        private Point _bloodWebLocation = new Point(360, 250);
+        private const int RESOLUTION = 2;
+        private Rectangle _bloodWebRect = new Rectangle(360, 250, 1040, 1050);
+        private Rectangle _levelupRect = new Rectangle(770, 700, 260, 160);
         private Point _lastClickableNode;
-        private int consecutiveErrorsCount;
-        private Bitmap _bloodweb;
-
+        private int continuousErrorsCount;
+        private Bitmap? _bloodwebImg;
+        private Bitmap? _levelupImg;
 
         public void Run()
         {
             ResetMousePosition();
-            _bloodweb = TakeScreenshot();
+            _bloodwebImg = TakeScreenshot(_bloodWebRect);
+            _levelupImg = TakeScreenshot(_levelupRect);
 
             try
             {
@@ -37,23 +33,23 @@ namespace AutoBloodweb
                 var clickableNode = FindClickableNode();
                 ClickNode(clickableNode.X, clickableNode.Y);
 
-                if (ArePointsSimilar(_lastClickableNode, clickableNode, 10))
+                if (ArePointsSimilar(_lastClickableNode, clickableNode, 150))
                 {
-                    throw new Exception("Could not validate previously identified node, out of bloodpoints?");
+                    throw new ClickSimilarPointsException("Previously node can not be validated, could be out of bloodpoints.");
                 }
-                consecutiveErrorsCount = 0;
+                continuousErrorsCount = 0;
                 _lastClickableNode = clickableNode;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-                switch (e.Message)
+                switch (e)
                 {
-                    case "Could not find clickable node.":
+                    case NoClickableNodeException:
                         {
                             if (IsPrestigeReady(out var prestigePoint))
                             {
-                                Console.WriteLine("Prestige ready, leveling up now.");
+                                Console.WriteLine("Prestige is ready, leveling up now.");
                                 PrestigeLevelUp(prestigePoint);
                             }
 
@@ -63,22 +59,19 @@ namespace AutoBloodweb
 
                             break;
                         }
-                    case "Could not validate previously identified node, out of bloodpoints?":
+                    case ClickSimilarPointsException:
                         {
-                            consecutiveErrorsCount += 1;
-                            Console.WriteLine($"{consecutiveErrorsCount} consecutive errors occur, about to abort reaching 5 times error.");
-                            if (consecutiveErrorsCount >= 5)
+                            continuousErrorsCount += 1;
+                            Console.WriteLine($"{continuousErrorsCount} continuous errors occur, about to abort reaching 3 times error.");
+                            if (continuousErrorsCount >= 3)
                             {
-                                Console.WriteLine($"{consecutiveErrorsCount} consecutive errors occur. Abortíng the operation.");
+                                Console.WriteLine($"{continuousErrorsCount} continuous errors occur. Abortíng the operation.");
                                 Environment.Exit(0);
                             }
-                            //ResetMousePosition();
-                            //mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-                            //Thread.Sleep(3000);
                             break;
                         }
                     default:
-                        Console.WriteLine("Aborting.");
+                        Console.WriteLine("Aborting the operation.");
                         Environment.Exit(0);
                         break;
                 }
@@ -87,23 +80,25 @@ namespace AutoBloodweb
             Run();
         }
 
-        private void ClickNode(int x, int y)
+        private static Bitmap TakeScreenshot(Rectangle rectangle)
+        {
+            var fullImg = ScreenCapture.CaptureActiveWindow();
+            var cloneRect = new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+            //out of memory issue?
+            return fullImg.Clone(cloneRect, fullImg.PixelFormat);
+        }
+
+        private static void ClickNode(int x, int y)
         {
             SetCursorPos(x + 35, y + 10);
             Thread.Sleep(10);
             mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
             Thread.Sleep(600);
             mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
-            //For the gift pack to continue
-            //Thread.Sleep(100);
-            //mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
-            //mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
         }
 
-        private void PrestigeLevelUp(Point point)
+        private static void PrestigeLevelUp(Point point)
         {
-            //var x = 900;
-            //var y = 780;
             var x = point.X + 10;
             var y = point.Y + 10;
 
@@ -122,16 +117,14 @@ namespace AutoBloodweb
             var stop = false;
             try
             {
-                for (int i = 0; i < _bloodweb.Width && !stop; i++)
+                for (int i = 0; i < _bloodwebImg.Width && !stop; i++)
                 {
-                    for (int j = 0; j < _bloodweb.Height && !stop; j++)
+                    for (int j = 0; j < _bloodwebImg.Height && !stop; j++)
                     {
-
-                        //if (clickableNode == Point.Empty && PixelGroupColorMatch(i, j, 6, Color.FromArgb(255, 222, 214, 169), 15))
-                        if (clickableNode == Point.Empty && PixelGroupColorMatch(i, j, 2, 8, Color.FromArgb(255, 228, 221, 174), 13))
+                        if (clickableNode == Point.Empty && PixelGroupColorMatch(_bloodwebImg, i, j, 3, 13, Color.FromArgb(255, 235, 225, 177), 20))
                         {
-                            clickableNode.X = i + _bloodWebLocation.X;
-                            clickableNode.Y = j + _bloodWebLocation.Y;
+                            clickableNode.X = i + _bloodWebRect.X;
+                            clickableNode.Y = j + _bloodWebRect.Y;
                             stop = true;
                         }
                     }
@@ -150,19 +143,19 @@ namespace AutoBloodweb
             }
             else
             {
-                throw new Exception("Could not find clickable node.");
+                throw new NoClickableNodeException("Could not find clickable node.");
             }
         }
 
         private bool IsPrestigeReady(out Point prestigePoint)
         {
-            for (int i = 0; i < _bloodweb.Width; i++)
+            for (int i = 0; i < _levelupImg.Width; i++)
             {
-                for (int j = 0; j < _bloodweb.Height; j++)
+                for (int j = 0; j < _levelupImg.Height; j++)
                 {
-                    if (PixelGroupColorMatch(i, j, 1, 10, Color.FromArgb(255, 113, 7, 7), 8))
+                    if (PixelGroupColorMatch(_levelupImg, i, j, 5, 11, Color.FromArgb(255, 113, 7, 7), 8))
                     {
-                        prestigePoint = new Point(i + _bloodWebLocation.X, j + _bloodWebLocation.Y);
+                        prestigePoint = new Point(i + _levelupRect.X, j + _levelupRect.Y);
                         return true;
                     }
                 }
@@ -171,39 +164,31 @@ namespace AutoBloodweb
             return false;
         }
 
-        private Bitmap TakeScreenshot()
-        {
-            var fullImg = ScreenCapture.CaptureActiveWindow();
-            //var cloneRect = new Rectangle(220, 150, 1000, 850);
-            var cloneRect = new Rectangle(_bloodWebLocation.X, _bloodWebLocation.Y, 1040, 1050);
-            //out of memory issue?
-            return fullImg.Clone(cloneRect, fullImg.PixelFormat);
-        }
 
-        private bool AreColorsSimilar(Color c1, Color c2, int tolerance)
+        private static bool AreColorsSimilar(Color c1, Color c2, int tolerance)
         {
             return Math.Abs(c1.R - c2.R) < tolerance &&
                    Math.Abs(c1.G - c2.G) < tolerance &&
                    Math.Abs(c1.B - c2.B) < tolerance;
         }
 
-        private bool ArePointsSimilar(Point p1, Point p2, int tolerance)
+        private static bool ArePointsSimilar(Point p1, Point p2, int tolerance)
         {
             return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2)) < tolerance;
         }
 
-        private bool PixelGroupColorMatch(int i, int j, int widthSize, int heightSize, Color targetColor, int tolerance)
+        private static bool PixelGroupColorMatch(Bitmap img, int i, int j, int widthSize, int heightSize, Color targetColor, int tolerance)
         {
-            if (j + heightSize > _bloodweb.Height || i + widthSize > _bloodweb.Width)
+            if (j + heightSize > img.Height || i + widthSize > img.Width)
                 return false;
 
-            var pixel0 = _bloodweb.GetPixel(i, j);
+            var pixel0 = img.GetPixel(i, j);
             var pixels = new List<Color> { pixel0 };
-            for (int index = 1; index < heightSize; index++)
+            for (int height = 1; height < heightSize; height += RESOLUTION)
             {
-                for (int col = 0; col < widthSize; col++)
+                for (int width = 0; width < widthSize; width += RESOLUTION)
                 {
-                    var pixel = _bloodweb.GetPixel(i + col, j + index);
+                    var pixel = img.GetPixel(i + width, j + height);
                     pixels.Add(pixel);
                 }
             }
@@ -211,7 +196,7 @@ namespace AutoBloodweb
             return pixels.All(p => AreColorsSimilar(p, targetColor, tolerance));
         }
 
-        private void ResetMousePosition()
+        private static void ResetMousePosition()
         {
             SetCursorPos(0, 0);
         }
