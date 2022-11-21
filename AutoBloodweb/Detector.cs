@@ -17,6 +17,7 @@ namespace AutoBloodweb
         private readonly int _dxLeftToRight = 101;
         private readonly int _dxLeftToBottom = 45;
         private readonly int _dyLeftToBottom = 60;
+
         private Bitmap? _bloodwebImg;
         private Bitmap? _prestigeImg;
 

@@ -3,7 +3,7 @@
 
 A program automatically spend blood points in Bloodweb of Dead By Daylight.
 
-This program is free and open-source.
+This program is free and open-source. Currently only compatible with resolution of 2560 x 1440
 ## Overview
 
 - Select clickable location to spend bloodpoint based on grouped pixels color recognition.
