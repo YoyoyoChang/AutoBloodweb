@@ -1,9 +1,11 @@
-﻿// See https://aka.ms/new-console-template for more information
-using AutoBloodweb;
+﻿using AutoBloodweb;
 
-Console.WriteLine("This is auto bloodweb clicker made by Yoyo. Focus window on bloodweb, starting in 5 seconds.");
+Console.WriteLine("This is Auto Bloodweb Spender made by Yoyo. Focus window on Dead By Daylight Bloodweb now, starting in 10 seconds.");
 Console.WriteLine("Press Alt + Tab switch to console and Ctrl + C to stop the application.");
-Thread.Sleep(5000);
-var spender = new BloodwebClicker();
+Thread.Sleep(10000);
+
+var detector = new Detector();
+var spender = new BloodwebSpender(detector);
+
 spender.Run();
 

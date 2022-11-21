@@ -1,4 +1,4 @@
-﻿namespace AutoBloodweb
+﻿namespace AutoBloodweb.Exceptions
 {
     public class ClickSimilarPointsException : Exception
     {
