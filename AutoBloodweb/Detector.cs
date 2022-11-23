@@ -6,17 +6,20 @@ namespace AutoBloodweb
     {
         private const int STEP_WIDTH = 2;
         private const int STEP_HEIGHT = 4;
-        private readonly Color _clickableRingColor = Color.FromArgb(255, 235, 225, 177);
-        private readonly Color _prestigeColor = Color.FromArgb(255, 113, 7, 7);
+        private readonly Color _clickableRingColor = Color.FromArgb(255, 156, 148, 116);
+        private readonly Color _prestigeColor = Color.FromArgb(255, 140, 0, 0);
         private readonly int _clickableRingTolerance = 30;
-        private readonly int _prestigeTolerance = 8;
+        private readonly int _prestigeTolerance = 18;
 
         // Below fields should adjust by different resolution, current are compatible with 2560 x 1440
         private readonly Rectangle _bloodWebRect = new Rectangle(360, 250, 1100, 1100);
         private readonly Rectangle _levelupRect = new Rectangle(770, 700, 260, 160);
+        private readonly Point _prestigeRectLocation = new Point(110, 60);
         private readonly int _dxLeftToRight = 101;
         private readonly int _dxLeftToBottom = 45;
         private readonly int _dyLeftToBottom = 60;
+        private readonly int _dxLeftToTop = 45;
+        private readonly int _dyLeftToTop = -41;
 
         private Bitmap? _bloodwebImg;
         private Bitmap? _prestigeImg;
@@ -24,7 +27,6 @@ namespace AutoBloodweb
         public Point FindClickableNode()
         {
             _bloodwebImg = TakeScreenshot(_bloodWebRect);
-            _prestigeImg = TakeScreenshot(_levelupRect);
 
             var clickableNode = Point.Empty;
             var stop = false;
@@ -35,11 +37,12 @@ namespace AutoBloodweb
                 {
                     for (int j = 0; j + _dyLeftToBottom < _bloodwebImg.Height && !stop; j++)
                     {
-                        // Find clickable node by verify left & right & bottom groups of pixels 
+                        // Find clickable node by verify left & right & bottom & top groups of pixels 
                         if (clickableNode == Point.Empty &&
                             PixelGroupColorMatch(_bloodwebImg, i, j, STEP_WIDTH * 2, STEP_HEIGHT * 3, _clickableRingColor, _clickableRingTolerance) &&
                             PixelGroupColorMatch(_bloodwebImg, i + _dxLeftToRight, j, STEP_WIDTH * 2, STEP_HEIGHT * 3, _clickableRingColor, _clickableRingTolerance) &&
-                            PixelGroupColorMatch(_bloodwebImg, i + _dxLeftToBottom, j + _dyLeftToBottom, STEP_WIDTH * 5, STEP_HEIGHT * 1, _clickableRingColor, _clickableRingTolerance))
+                            PixelGroupColorMatch(_bloodwebImg, i + _dxLeftToBottom, j + _dyLeftToBottom, STEP_WIDTH * 5, STEP_HEIGHT * 1, _clickableRingColor, _clickableRingTolerance) &&
+                            PixelGroupColorMatch(_bloodwebImg, i + _dxLeftToTop, j + _dyLeftToTop, STEP_WIDTH * 5, STEP_HEIGHT * 1, _clickableRingColor, _clickableRingTolerance))
                         {
                             clickableNode.X = i + _bloodWebRect.X;
                             clickableNode.Y = j + _bloodWebRect.Y;
@@ -66,18 +69,19 @@ namespace AutoBloodweb
 
         public bool IsPrestigeReady(out Point prestigePoint)
         {
-            for (int i = 0; i < _prestigeImg.Width; i++)
+            _prestigeImg = TakeScreenshot(_levelupRect);
+
+            var i = _prestigeRectLocation.X;
+            var j = _prestigeRectLocation.Y;
+
+            if (PixelGroupColorMatch(_prestigeImg, i, j, STEP_WIDTH * 10, STEP_HEIGHT * 1, _prestigeColor, _prestigeTolerance))
             {
-                for (int j = 0; j < _prestigeImg.Height; j++)
-                {
-                    if (PixelGroupColorMatch(_prestigeImg, i, j, STEP_WIDTH * 3, STEP_HEIGHT * 4, _prestigeColor, _prestigeTolerance))
-                    {
-                        prestigePoint = new Point(i + _levelupRect.X, j + _levelupRect.Y);
-                        return true;
-                    }
-                }
+                prestigePoint = new Point(i + _levelupRect.X, j + _levelupRect.Y);
+
+                return true;
             }
             prestigePoint = Point.Empty;
+
             return false;
         }
 
