@@ -20,6 +20,8 @@ The Auto Bloodweb spends blood points automatically and efficiently. This is an 
 - Program does not prioritize any items from the bloodweb. Be prepare to lose some Bloody Party Streamers!
 - Program starts in 10 seconds once running, set active window to Dead By Daylight Bloodweb page within 10 seconds.
 - `Alt + Tab` back to console and press `Ctrl + C` to exit the program.
+- Hud scale set to 100%.
+- Resolution set to 100%.
 - Disable any filter/shaders.
 - Disable color blind mode.
 - Disable icon packs.
