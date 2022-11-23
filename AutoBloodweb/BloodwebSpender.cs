@@ -87,11 +87,14 @@ namespace AutoBloodweb
 
         private static void ClickNode(int x, int y)
         {
-            SetCursorPos(x + 35, y + 10);
+            var clickX = x + 45;
+            var clickY = y + 10;
+
+            SetCursorPos(clickX, clickY);
             Thread.Sleep(10);
-            mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, clickX, clickY, 0, 0);
             Thread.Sleep(600);
-            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTUP, clickX, clickY, 0, 0);
         }
 
         private static void PrestigeLevelUp(Point point)
@@ -112,7 +115,7 @@ namespace AutoBloodweb
             return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2)) < tolerance;
         }
 
-        private static void ErrorCheck(int suspiciousMoveCount)
+        private void ErrorCheck(int suspiciousMoveCount)
         {
             if (suspiciousMoveCount >= ERROR_WARNING_COUNT)
             {
